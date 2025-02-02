@@ -3,22 +3,22 @@ import sys
 from PIL import Image
 
 def main():
-    ROOT = r'C:\Users\Scouter\Downloads'
-    DUMP_PATH = rf'{ROOT}\image-dump'
+    ROOT = os.path.join(os.path.expanduser('~'), 'Downloads')
+    DUMP_PATH = rf'{ROOT}/image-dump'
     
     if len(sys.argv) > 1 and os.path.exists(sys.argv[1]):
         DUMP_PATH = sys.argv[1]
-        ROOT = DUMP_PATH + r'\..\sorted'
+        ROOT = DUMP_PATH + r'/../sorted'
     
     BOARD = r''
     THREAD = r''
-    SMALL_PATH = rf'{ROOT}\out\tiny'
-    HD_PATH = rf'{ROOT}\out\1080'
-    UHD_PATH = rf'{ROOT}\out\1440'
-    FOURK_PATH = rf'{ROOT}\out\2160'
-    TALL_PATH = rf'{ROOT}\out\tall'
-    WIDE_PATH = rf'{ROOT}\out\wide'
-    WEBM_PATH = rf'{ROOT}\out\webm'
+    SMALL_PATH = rf'{ROOT}/out/tiny'
+    HD_PATH = rf'{ROOT}/out/1080'
+    UHD_PATH = rf'{ROOT}/out/1440'
+    FOURK_PATH = rf'{ROOT}/out/2160'
+    TALL_PATH = rf'{ROOT}/out/tall'
+    WIDE_PATH = rf'{ROOT}/out/wide'
+    WEBM_PATH = rf'{ROOT}/out/webm'
 
     for path in (SMALL_PATH, HD_PATH, UHD_PATH, FOURK_PATH, TALL_PATH, WEBM_PATH, WIDE_PATH):
         if not os.path.exists(path):
