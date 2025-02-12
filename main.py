@@ -169,7 +169,8 @@ def extract_images_from_thread(url: str) -> None:
             else:
                 this_path = fr'{path}/{image_name}'
                 urllib.request.urlretrieve(p.image_url, this_path)
-                Image.open(this_path)
+                if not image_name.endswith("webm") and not image_name.endswith(".gif"):
+                    Image.open(this_path)
 
         except UnidentifiedImageError as e:
             print(f"\tCorrupt Image. Deleting {image_name}")
