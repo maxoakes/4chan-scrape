@@ -1,5 +1,5 @@
+import time
 import os
-from pathlib import Path
 import sys
 import requests
 import json
@@ -20,16 +20,9 @@ ALL_BOARDS = ['b','c','d','e','f','g','gif','h','hr','k','m','o','p','r','s',
     'cgl','ck','co','diy','fa','fit','gd','hc','his','int','jp','lit','mlp',
     'mu','n','news','out','po','pol','pw','qst','sci','soc','sp','tg','toy',
     'trv','tv','vp','vt','wsg','wsr','x','xs']
-INCLUDE_NSFW = False
 
 def main():
     # py main.py (thread_url)
-    for a in sys.argv:
-        if a == '-nsfw':
-            global INCLUDE_NSFW
-            INCLUDE_NSFW = True
-            print("Will include NSFW")
-            break
 
     load_dotenv()
     if len(sys.argv) > 1 and sys.argv[1].startswith('https://boards.4chan.org/'):
@@ -124,7 +117,7 @@ def extract_images_from_thread(url: str) -> None:
     file_path = fr'{path}/{MANIFEST_NAME}'
     if not os.path.isfile(file_path):
         with open(file_path, 'a+') as f:
-            f.write('id\ttimestamp\timage url\tuw conf\tnsfw conf\tsuccess\ttext\n')
+            f.write('id\ttimestamp\timage\turl\tsuccess\ttext\n')
 
     # remove potential repeat items
     count = 0
@@ -145,33 +138,17 @@ def extract_images_from_thread(url: str) -> None:
         if p.image_url == '':
             continue
         
-        guesses = {}
-        if not INCLUDE_NSFW:
-            try:
-                url = f'https://api.imagga.com/v2/categories/nsfw_beta?image_url={p.image_url}'
-                nsfw_response = requests.get(url,auth=(os.getenv("IMAGGA_USER"), os.getenv("IMAGGA_TOKEN")))
-                results = nsfw_response.json().get('result')
-                if results:
-                    cats = results.get('categories')
-                    
-                    for c in cats:
-                        guesses[c['name']['en']] = c['confidence']
-            except:
-                print("Could not extract nsfw status")
-        
+        # Avoid HTTP error 429
+        time.sleep(5)
         image_name = f'{p.image_url.split("/")[-1]}'
         this_path = fr'{path}/{image_name}'
-        print(f"{i+1}. Downloading {image_name} from {p.image_url}: {list(guesses.items())}")
+        print(f"{i+1}. Downloading {image_name} from {p.image_url}")
         was_successful = 1
         try:
-            if is_nsfw(guesses):
-                print(f'\tNot downloading: {list(guesses.items())}')
-            else:
-                this_path = fr'{path}/{image_name}'
-                urllib.request.urlretrieve(p.image_url, this_path)
-                if not image_name.endswith("webm") and not image_name.endswith(".gif"):
-                    Image.open(this_path)
-
+            this_path = fr'{path}/{image_name}'
+            urllib.request.urlretrieve(p.image_url, this_path)
+            if not image_name.endswith("webm") and not image_name.endswith("mp4") and not image_name.endswith(".gif"):
+                Image.open(this_path)
         except UnidentifiedImageError as e:
             print(f"\tCorrupt Image. Deleting {image_name}")
             os.remove(this_path)
@@ -180,13 +157,9 @@ def extract_images_from_thread(url: str) -> None:
             print(f"\tDownload Failed for {p.image_url} -> {image_name}: {e}")
             was_successful = 0
         finally:
-            manifest_file.write(f'{p.post_id}\t{p.post_timestamp}\t{p.image_url}\t{round(guesses.get("underwear",0), 3)}\t{round(guesses.get("nsfw",0), 3)}\t{was_successful}\t{p.post_content}\n')
+            if was_successful == 1:
+                manifest_file.write(f'{p.post_id}\t{p.post_timestamp}\t{p.image_url}\t{was_successful}\t{p.post_content}\n')
 
-
-def is_nsfw(guesses):
-    #  [('underwear', 71.1747283935547), ('safe', 22.4784469604492), ('nsfw', 6.34681749343872)]
-    return guesses.get('underwear', 0) > 60.0 or guesses.get('nsfw', 0) > 20.0
- 
 
 def is_ok(response: requests.Response):
     if str(response.status_code).startswith('4'):
